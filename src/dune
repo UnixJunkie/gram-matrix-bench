@@ -1,0 +1,5 @@
+
+(executables
+  (names gram)
+  (public_names gram)
+  (libraries parmap parany batteries dolog minicli))
