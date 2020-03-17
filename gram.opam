@@ -1,0 +1,22 @@
+opam-version: "2.0"
+authors: "Francois Berenger"
+maintainer: "unixjunkie@sdf.org"
+homepage: "https://github.com/UnixJunkie/gram-matrix-bench"
+bug-reports: "https://github.com/UnixJunkie/gram-matrix-bench/issues"
+dev-repo: "git+https://github.com/UnixJunkie/gram-matrix-bench.git"
+license: "GPL"
+build: ["dune" "build" "-p" name "-j" jobs]
+depends: [
+  "ocaml"
+  "dune"
+  "base-unix"
+  "batteries"
+  "minicli"
+  "parany"
+  "parmap"
+]
+synopsis: "Putting multicore-OCaml to the test"
+# url {
+#   src: "https://github.com/UnixJunkie/gram-matrix-bench/archive/XXX.tar.gz"
+#   checksum: "md5=YYY"
+# }
