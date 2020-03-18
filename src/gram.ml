@@ -9,10 +9,12 @@ module L = BatList
 module Log = Dolog.Log
 
 let dot_product xs ys =
+  let n = A.length xs in
+  assert(n = A.length ys);
   let res = ref 0.0 in
-  A.iter2 (fun x y ->
-      res := !res +. (x *. y)
-    ) xs ys;
+  for i = 0 to n - 1 do
+    res := !res +. ((A.unsafe_get xs i) *. (A.unsafe_get ys i))
+  done;
   !res
 
 type style = Sequential
