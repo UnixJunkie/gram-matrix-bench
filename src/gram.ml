@@ -26,6 +26,15 @@ let string_of_style = function
   | Par_Parany -> "parany"
   | Par_Multicore -> "multicore"
 
+let emit_one i j n samples () =
+  if !i >= n then raise Parany.End_of_input
+  else begin
+    let res = (!i, !j, dot_product samples.(!i) samples.(!j)) in
+    incr i;
+    j := (!j + 1) mod n;
+    res
+  end
+
 let compute_gram_matrix style ncores chunksize samples =
   assert(A.length samples > 0);
   Log.info "samples: %d features: %d"
@@ -38,7 +47,7 @@ let compute_gram_matrix style ncores chunksize samples =
       for j = i to n - 1 do
         let x = dot_product samples.(i) samples.(j) in
         res.(i).(j) <- x;
-        res.(j).(i) <- x (* the matrix is symmetric *)
+        res.(j).(i) <- x (* symmetric matrix *)
       done
     done;
     res
@@ -56,7 +65,7 @@ let compute_gram_matrix style ncores chunksize samples =
     L.iter (
       L.iter (fun (i, j, x) ->
           res.(i).(j) <- x;
-          res.(j).(i) <- x (* the matrix is symmetric *)
+          res.(j).(i) <- x (* symmetric matrix *)
         )
     ) dots;
     res
