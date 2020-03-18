@@ -33,19 +33,20 @@ let emit_one (i: int ref) (n: int) ((): unit): int =
     incr i;
     res
 
-(* FBR: don't transmit js to the gather if that parallelizes better *)
-let process_one (samples: float array array) (n: int) (i: int):
-  (int * int * float) list =
-  let js = L.range i `To (n - 1) in
-  L.map (fun j ->
-      (i, j, dot_product samples.(i) samples.(j))
-    ) js
+(* FBR: for a script iterating over nprocs and csize *)
 
-let gather_one (res: float array array) (l: (int * int * float) list): unit =
-  L.iter (fun (i, j, x) ->
+let process_one (samples: float array array) (n: int) (i: int):
+  (int * float list) =
+  let js = L.range i `To (n - 1) in
+  let si = samples.(i) in
+  (i, L.map (fun j -> dot_product si samples.(j)) js)
+
+let gather_one (res: float array array) ((i, xs): (int * float list)): unit =
+  L.iteri (fun j' x ->
+      let j = j' + i in
       res.(i).(j) <- x;
       res.(j).(i) <- x (* symmetric matrix *)
-    ) l
+    ) xs
 
 let compute_gram_matrix style ncores chunksize samples =
   let n = A.length samples in
