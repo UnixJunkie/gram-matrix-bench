@@ -26,22 +26,32 @@ let string_of_style = function
   | Par_Parany -> "parany"
   | Par_Multicore -> "multicore"
 
-let emit_one i j n samples () =
+let emit_one (i: int ref) (n: int) ((): unit): int =
   if !i >= n then raise Parany.End_of_input
-  else begin
-    let res = (!i, !j, dot_product samples.(!i) samples.(!j)) in
+  else
+    let res = !i in
     incr i;
-    j := (!j + 1) mod n;
     res
-  end
+
+(* FBR: don't transmit js to the gather if that parallelizes better *)
+let process_one (samples: float array array) (n: int) (i: int):
+  (int * int * float) list =
+  let js = L.range i `To (n - 1) in
+  L.map (fun j ->
+      (i, j, dot_product samples.(i) samples.(j))
+    ) js
+
+let gather_one (res: float array array) (l: (int * int * float) list): unit =
+  L.iter (fun (i, j, x) ->
+      res.(i).(j) <- x;
+      res.(j).(i) <- x (* symmetric matrix *)
+    ) l
 
 let compute_gram_matrix style ncores chunksize samples =
-  assert(A.length samples > 0);
-  Log.info "samples: %d features: %d"
-    (A.length samples) (A.length samples.(0));
+  let n = A.length samples in
+  assert(n > 0);
   match style with
-  | Sequential ->
-    let n = A.length samples in
+  | Sequential -> (* ------------------------------------------------------- *)
     let res = A.init n (fun _ -> A.create_float n) in
     for i = 0 to n - 1 do
       for j = i to n - 1 do
@@ -51,8 +61,7 @@ let compute_gram_matrix style ncores chunksize samples =
       done
     done;
     res
-  | Par_Parmap ->
-    let n = A.length samples in
+  | Par_Parmap -> (* ------------------------------------------------------- *)
     let is = L.range 0 `To (n - 1) in
     let dots =
       Parmap.parmap ~ncores ~chunksize (fun i ->
@@ -69,8 +78,15 @@ let compute_gram_matrix style ncores chunksize samples =
         )
     ) dots;
     res
-  | Par_Parany -> failwith "Parany: not implemented yet"
-  | Par_Multicore -> failwith "Multicore: not implemented yet"
+  | Par_Parany -> (* ------------------------------------------------------- *)
+    let res = A.init n (fun _ -> A.create_float n) in
+    Parany.run ~verbose:false ~csize:chunksize ~nprocs:ncores
+      ~demux:(emit_one (ref 0) n)
+      ~work:(process_one samples n)
+      ~mux:(gather_one res);
+    res
+  | Par_Multicore -> (* ---------------------------------------------------- *)
+    failwith "Multicore: not implemented yet"
 
 let parse_line line =
   let int_strings = BatString.split_on_char ' ' line in
@@ -120,6 +136,8 @@ let main () =
   CLI.finalize ();
   (* read data in *)
   let samples = A.of_list (Utls.map_on_lines_of_file input_fn parse_line) in
+  Log.info "samples: %d features: %d"
+    (A.length samples) (A.length samples.(0));
   let ref_dt, ref_matrix =
     Gc.full_major ();
     Utls.wall_clock_time (fun () ->
