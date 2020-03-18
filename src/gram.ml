@@ -58,6 +58,27 @@ let parse_line line =
     ) int_strings;
   res
 
+(* print matrix corners *)
+let print_matrix mat =
+  let m = A.length mat in
+  let n = A.length mat.(0) in
+  let idots = ref false in
+  for i = 0 to m - 1 do
+    if i < 3 || i > m - 4 then
+      begin
+        let jdots = ref false in
+        for j = 0 to n - 1 do
+          if j < 3 || j > n - 4 then
+            printf (if j <> 0 then "\t%6.2f" else "%6.2f") mat.(i).(j)
+          else if not !jdots then
+            (printf "\t..."; jdots := true)
+        done;
+        printf "\n"
+      end
+    else if not !idots then
+      (printf "...\n"; idots := true)
+  done
+
 let main () =
   Log.color_on ();
   Log.set_log_level Log.INFO;
@@ -82,7 +103,7 @@ let main () =
       ) in
   Log.info "np: %d cs: %d style: %s dt: %f accel: %.2f"
     ncores csize "seq" ref_dt 1.0;
-  (* TODO: print corners of the ref matrix *)
+  print_matrix ref_matrix;
   L.iter (fun style ->
       let () = Gc.full_major () in
       let curr_dt, curr_matrix =
