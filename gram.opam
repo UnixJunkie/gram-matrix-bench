@@ -10,7 +10,6 @@ depends: [
   "ocaml"
   "dune"
   "base-unix"
-  "batteries"
   "minicli"
   "parany"
   "parmap"

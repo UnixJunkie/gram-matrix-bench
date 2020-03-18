@@ -3,9 +3,9 @@
 
 open Printf
 
-module A = BatArray
+module A = Array
 module CLI = Minicli.CLI
-module L = BatList
+module L = List
 module Log = Dolog.Log
 
 let dot_product xs ys =
@@ -37,7 +37,7 @@ let emit_one (i: int ref) (n: int) ((): unit): int =
 
 let process_one (samples: float array array) (n: int) (i: int):
   (int * float list) =
-  let js = L.range i `To (n - 1) in
+  let js = Utls.range i (n - 1) in
   let si = samples.(i) in
   (i, L.map (fun j -> dot_product si samples.(j)) js)
 
@@ -63,10 +63,10 @@ let compute_gram_matrix style ncores chunksize samples =
     done;
     res
   | Par_Parmap -> (* ------------------------------------------------------- *)
-    let is = L.range 0 `To (n - 1) in
+    let is = Utls.range 0 (n - 1) in
     let dots =
       Parmap.parmap ~ncores ~chunksize (fun i ->
-          let js = L.range i `To (n - 1) in
+          let js = Utls.range i (n - 1) in
           L.map (fun j ->
               (i, j, dot_product samples.(i) samples.(j))
             ) js
@@ -90,7 +90,7 @@ let compute_gram_matrix style ncores chunksize samples =
     failwith "Multicore: not implemented yet"
 
 let parse_line line =
-  let int_strings = BatString.split_on_char ' ' line in
+  let int_strings = Utls.string_split_on_char ' ' line in
   let nb_features = L.length int_strings in
   let res = A.create_float nb_features in
   L.iteri (fun i int_str ->

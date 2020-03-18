@@ -3,4 +3,4 @@
   (names gram)
   (public_names gram)
   (modules gram utls)
-  (libraries parmap parany batteries dolog minicli))
+  (libraries parmap parany dolog minicli))
