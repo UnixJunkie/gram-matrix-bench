@@ -65,6 +65,7 @@ let compute_gram_matrix style ncores chunksize samples =
   | Par_Parmap -> (* ------------------------------------------------------- *)
     let is = Utls.range 0 (n - 1) in
     let dots =
+      let () = Parmap.enable_core_pinning () in
       Parmap.parmap ~ncores ~chunksize (fun i ->
           let js = Utls.range i (n - 1) in
           L.map (fun j ->
@@ -81,6 +82,7 @@ let compute_gram_matrix style ncores chunksize samples =
     res
   | Par_Parany -> (* ------------------------------------------------------- *)
     let res = A.init n (fun _ -> A.create_float n) in
+    let () = Parany.enable_core_pinning () in
     Parany.run ~verbose:false ~csize:chunksize ~nprocs:ncores
       ~demux:(emit_one (ref 0) n)
       ~work:(process_one samples n)
