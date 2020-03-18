@@ -107,7 +107,7 @@ let print_matrix mat =
         let jdots = ref false in
         for j = 0 to n - 1 do
           if j < 3 || j > n - 4 then
-            printf (if j <> 0 && j <> n - 3 then "\t%6.2f" else "%6.2f")
+            printf (if j <> 0 then "\t%6.2f" else "%6.2f")
               mat.(i).(j)
           else if not !jdots then
             (printf "\t..."; jdots := true)
