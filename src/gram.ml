@@ -118,7 +118,10 @@ let print_matrix mat =
       end
     else if not !idots then
       (printf "\t\t\t...\n"; idots := true)
-  done
+  done;
+  flush stdout
+
+(* FBR: read the matrix from file dump if exist *)
 
 let main () =
   Log.color_on ();
@@ -128,25 +131,30 @@ let main () =
   if argc = 1 || show_help then
     (eprintf "usage:\n\
               %s -i <data.csv>\n  \
-              [-h|--help]: show this help message\n"
+              [-h|--help]: show this help message\n  \
+              [-np <int>]: nprocs\n  \
+              [-c <int>]: chunk size\n  \
+              [-q]: quiet mode\n"
        Sys.argv.(0);
      exit 1);
   let input_fn = CLI.get_string ["-i"] args in
   let ncores = CLI.get_int_def ["-np"] args 1 in
   let csize = CLI.get_int_def ["-c"] args 1 in
+  let quiet = CLI.get_set_bool ["-q"] args in
   CLI.finalize ();
   (* read data in *)
   let samples = A.of_list (Utls.map_on_lines_of_file input_fn parse_line) in
-  Log.info "samples: %d features: %d"
-    (A.length samples) (A.length samples.(0));
+  if not quiet then
+    Log.info "samples: %d features: %d"
+      (A.length samples) (A.length samples.(0));
   let ref_dt, ref_matrix =
     Gc.full_major ();
     Utls.wall_clock_time (fun () ->
         compute_gram_matrix Sequential 1 1 samples
       ) in
+  if not quiet then print_matrix ref_matrix;
   Log.info "n: %d c: %d s: %s dt: %.2f a: %.2f"
     ncores csize "seq" ref_dt 1.0;
-  print_matrix ref_matrix;
   L.iter (fun style ->
       let () = Gc.full_major () in
       let curr_dt, curr_matrix =
@@ -158,7 +166,8 @@ let main () =
         (style_name ^ ": matrix <> ref_matrix");
       Log.info "n: %d c: %d s: %s dt: %.2f a: %.2f"
         ncores csize style_name curr_dt (ref_dt /. curr_dt)
-    ) [Par_Parmap; Par_Parany; Par_Multicore];
+    ) [Par_Parmap; Par_Parany];
+    (* ) [Par_Parmap; Par_Parany; Par_Multicore]; *)
   ()
 
 let () = main ()
