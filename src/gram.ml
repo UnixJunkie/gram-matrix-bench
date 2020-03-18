@@ -33,8 +33,6 @@ let emit_one (i: int ref) (n: int) ((): unit): int =
     incr i;
     res
 
-(* FBR: for a script iterating over nprocs and csize *)
-
 let process_one (samples: float array array) (n: int) (i: int):
   (int * float list) =
   let js = L.range i `To (n - 1) in
