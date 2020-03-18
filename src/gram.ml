@@ -121,8 +121,6 @@ let print_matrix mat =
   done;
   flush stdout
 
-(* FBR: read the matrix from file dump if exist *)
-
 let main () =
   Log.color_on ();
   Log.set_log_level Log.INFO;
