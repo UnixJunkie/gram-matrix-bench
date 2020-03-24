@@ -166,8 +166,6 @@ let main () =
         (style_name ^ ": matrix <> ref_matrix");
       Log.info "n: %d c: %d s: %s dt: %.2f a: %.2f"
         ncores csize style_name curr_dt (ref_dt /. curr_dt)
-    ) [Par_Parmap; Par_Parany];
-    (* ) [Par_Parmap; Par_Parany; Par_Multicore]; *)
-  ()
+    ) [Par_Parmap; Par_Parany(* ; Par_Multicore *)]
 
 let () = main ()
