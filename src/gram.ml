@@ -48,46 +48,30 @@ let gather_one (res: float array array) ((i, xs): (int * float list)): unit =
       res.(j).(i) <- x (* symmetric matrix *)
     ) xs
 
-let compute_gram_matrix style ncores chunksize samples =
+let compute_gram_matrix style ncores chunksize samples res =
   let n = A.length samples in
   assert(n > 0);
   match style with
   | Sequential -> (* ------------------------------------------------------- *)
-    let res = A.init n (fun _ -> A.create_float n) in
     for i = 0 to n - 1 do
       for j = i to n - 1 do
         let x = dot_product samples.(i) samples.(j) in
         res.(i).(j) <- x;
         res.(j).(i) <- x (* symmetric matrix *)
       done
-    done;
-    res
+    done
   | Par_Parmap -> (* ------------------------------------------------------- *)
     let is = Utls.range 0 (n - 1) in
-    let dots =
-      let () = Parmap.enable_core_pinning () in
-      Parmap.parmap ~ncores ~chunksize (fun i ->
-          let js = Utls.range i (n - 1) in
-          L.map (fun j ->
-              (i, j, dot_product samples.(i) samples.(j))
-            ) js
-        ) (Parmap.L is) in
-    let res = A.init n (fun _ -> A.create_float n) in
-    L.iter (
-      L.iter (fun (i, j, x) ->
-          res.(i).(j) <- x;
-          res.(j).(i) <- x (* symmetric matrix *)
-        )
-    ) dots;
-    res
+    let () = Parmap.enable_core_pinning () in
+    L.iter (gather_one res)
+      (Parmap.parmap ~ncores ~chunksize (process_one samples n)
+         (Parmap.L is))
   | Par_Parany -> (* ------------------------------------------------------- *)
-    let res = A.init n (fun _ -> A.create_float n) in
     let () = Parany.enable_core_pinning () in
     Parany.run ~verbose:false ~csize:chunksize ~nprocs:ncores
       ~demux:(emit_one (ref 0) n)
       ~work:(process_one samples n)
-      ~mux:(gather_one res);
-    res
+      ~mux:(gather_one res)
   | Par_Multicore -> (* ---------------------------------------------------- *)
     failwith "Multicore: not implemented yet"
 
@@ -152,20 +136,23 @@ let main () =
   if not quiet then
     Log.info "samples: %d features: %d"
       (A.length samples) (A.length samples.(0));
-  let ref_dt, ref_matrix =
-    Gc.full_major ();
+  let n = A.length samples in
+  let ref_matrix = A.init n (fun _ -> A.create_float n) in
+  let ref_dt, () =
+    let () = Gc.full_major () in
     Utls.wall_clock_time (fun () ->
-        compute_gram_matrix Sequential 1 1 samples
+        compute_gram_matrix Sequential 1 1 samples ref_matrix
       ) in
   if not quiet then print_matrix ref_matrix;
   Log.info "n: %d c: %d s: %s dt: %.2f a: %.2f"
     1 csize "seq" ref_dt 1.0;
   L.iter (fun ncores ->
       L.iter (fun style ->
+          let curr_matrix = A.init n (fun _ -> A.create_float n) in
           let () = Gc.full_major () in
-          let curr_dt, curr_matrix =
+          let curr_dt, () =
             Utls.wall_clock_time (fun () ->
-                compute_gram_matrix style ncores csize samples
+                compute_gram_matrix style ncores csize samples curr_matrix
               ) in
           let style_name = string_of_style style in
           Utls.enforce (curr_matrix = ref_matrix)
