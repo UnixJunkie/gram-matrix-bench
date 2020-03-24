@@ -1,6 +1,6 @@
 # gram-matrix-bench
 
-Performance benchmark for Parmap, Parany and Multicore-OCaml
+Performance benchmark for Parmap and Parany
 
 Cf. https://en.wikipedia.org/wiki/Gramian_matrix
 
