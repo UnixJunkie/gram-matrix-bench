@@ -14,7 +14,9 @@ depends: [
   "parany"
   "parmap"
 ]
-synopsis: "Putting multicore-OCaml to the test"
+synopsis: "Gram matrix initialization benchmark"
+description: """"Allows to compare the performance
+of parallelization libraries Parmap and Parany."""
 # url {
 #   src: "https://github.com/UnixJunkie/gram-matrix-bench/archive/XXX.tar.gz"
 #   checksum: "md5=YYY"
