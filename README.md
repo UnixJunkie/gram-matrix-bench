@@ -4,6 +4,8 @@ Performance benchmark for Parmap and Parany
 
 Cf. https://en.wikipedia.org/wiki/Gramian_matrix
 
+![bench_results](bench.png?raw=true)
+
 Run example:
 
 ```
