@@ -49,4 +49,9 @@ Run example:
 2020-03-24 17:41:25.252 INFO : n: 16 c: 1 s: parmap dt: 11.27 a: 5.11
 2020-03-24 17:41:33.760 INFO : n: 16 c: 1 s: parany dt: 7.76 a: 7.42
 
+# parmap
+c=6, np=16 -> a=6.04
+
+# parany
+c=4, np=16 -> a=8.21
 ```
