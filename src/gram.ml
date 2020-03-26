@@ -120,7 +120,7 @@ let main () =
               %s -i <data.csv>\n  \
               [-h|--help]: show this help message\n  \
               [-np 2,4,8,...]: number of cores to try\n  \
-              [-c <int>]: chunk size\n  \
+              [-c 1,5,10,50,...]: chunk sizes to try\n  \
               [-q]: quiet mode\n"
        Sys.argv.(0);
      exit 1);
@@ -128,7 +128,9 @@ let main () =
   let core_nums = match CLI.get_string_opt ["-np"] args with
     | None -> [2]
     | Some s -> parse_cores_str s in
-  let csize = CLI.get_int_def ["-c"] args 1 in
+  let csizes = match CLI.get_string_opt ["-c"] args with
+    | None -> [1]
+    | Some s -> parse_cores_str s in
   let quiet = CLI.get_set_bool ["-q"] args in
   CLI.finalize ();
   (* read data in *)
@@ -145,21 +147,23 @@ let main () =
       ) in
   if not quiet then print_matrix ref_matrix;
   Log.info "n: %d c: %d s: %s dt: %.2f a: %.2f"
-    1 csize "seq" ref_dt 1.0;
+    1 1 "seq" ref_dt 1.0;
   L.iter (fun ncores ->
-      L.iter (fun style ->
-          let curr_matrix = A.init n (fun _ -> A.create_float n) in
-          let () = Gc.full_major () in
-          let curr_dt, () =
-            Utls.wall_clock_time (fun () ->
-                compute_gram_matrix style ncores csize samples curr_matrix
-              ) in
-          let style_name = string_of_style style in
-          Utls.enforce (curr_matrix = ref_matrix)
-            (style_name ^ ": matrix <> ref_matrix");
-          Log.info "n: %d c: %d s: %s dt: %.2f a: %.2f"
-            ncores csize style_name curr_dt (ref_dt /. curr_dt)
-        ) [Par_Parmap; Par_Parany(* ; Par_Multicore *)]
+      L.iter (fun csize ->
+          L.iter (fun style ->
+              let curr_matrix = A.init n (fun _ -> A.create_float n) in
+              let () = Gc.full_major () in
+              let curr_dt, () =
+                Utls.wall_clock_time (fun () ->
+                    compute_gram_matrix style ncores csize samples curr_matrix
+                  ) in
+              let style_name = string_of_style style in
+              Utls.enforce (curr_matrix = ref_matrix)
+                (style_name ^ ": matrix <> ref_matrix");
+              Log.info "n: %d c: %d s: %s dt: %.2f a: %.2f"
+                ncores csize style_name curr_dt (ref_dt /. curr_dt)
+            ) [(* Par_Parmap; *) Par_Parany (*; Par_Multicore *)]
+        ) csizes
     ) core_nums
 
 let () = main ()
